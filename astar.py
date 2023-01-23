@@ -73,19 +73,32 @@ class Spot:
     pygame.draw.rect(win, self.color, (self.x, self.y, self.width, self.width))
 
   def update_neighbors(self, grid):
-    # check up, down, left, right for valid neighbors (not a barrier)
+    # Straights (not a barrier)
     self.neighbors = []
-    if self.row < self.total_rows - 1 and not grid[self.row + 1][self.col].is_barrier(): #DOWN
+    if self.row < self.total_rows - 1 and not grid[self.row + 1][self.col].is_barrier(): #S
       self.neighbors.append(grid[self.row + 1][self.col])
 
-    if self.row > 0 and not grid[self.row - 1][self.col].is_barrier(): #UP
+    if self.row > 0 and not grid[self.row - 1][self.col].is_barrier(): #N
       self.neighbors.append(grid[self.row - 1][self.col])
 
-    if self.col < self.total_rows - 1 and not grid[self.row][self.col].is_barrier(): #RIGHT
+    if self.col < self.total_rows - 1 and not grid[self.row][self.col + 1].is_barrier(): #E
       self.neighbors.append(grid[self.row][self.col + 1])
 
-    if self.col > 0 and not grid[self.row][self.col - 1].is_barrier(): #LEFT
+    if self.col > 0 and not grid[self.row][self.col - 1].is_barrier(): #W
       self.neighbors.append(grid[self.row][self.col - 1])
+
+    # Diagonals
+    if self.col > 0 and self.row > 0 and not grid[self.row - 1][self.col - 1].is_barrier(): #N-W
+      self.neighbors.append(grid[self.row - 1][self.col - 1])
+
+    if self.col < self.total_rows - 1 and self.row > 0 and not grid[self.row - 1][self.col + 1].is_barrier(): #N-E
+      self.neighbors.append(grid[self.row - 1][self.col + 1])
+    
+    if self.col > 0 and self.row < self.total_rows - 1 and not grid[self.row + 1][self.col - 1].is_barrier(): #S-W
+      self.neighbors.append(grid[self.row + 1][self.col - 1])
+
+    if self.col < self.total_rows - 1 and self.row < self.total_rows - 1 and not grid[self.row + 1][self.col + 1].is_barrier(): #S-E
+      self.neighbors.append(grid[self.row + 1][self.col + 1])
          
   # less than -> how we handle when we compare two spots together
   def __lt__(self, other):
@@ -97,11 +110,16 @@ def h(p1, p2):
   x2, y2 = p2
   return abs(x1 - x2) + abs(y1 - y2)
 
-def reconstruct_path(came_from, current, draw):
+def reconstruct_path(came_from, current, draw, start):
   while current in came_from:
     current = came_from[current]
+    # Return out if current is at the end. Prevents changing the color of starting point
+    if current.get_pos() == start.get_pos():
+      return
+
     current.make_path()
     draw()
+  
 
 def algorithm(draw, grid, start, end):
   count = 0
@@ -121,16 +139,25 @@ def algorithm(draw, grid, start, end):
       if event.type == pygame.QUIT:
         pygame.quit()
 
+    # Grab starting node
     current = open_set.get()[2] 
     open_set_hash.remove(current)
 
+    # End condition
     if current == end:
-      reconstruct_path(came_from, end, draw)
+      reconstruct_path(came_from, end, draw, start)
       end.make_end()
       return True
 
+    # neighbor temp_g_score dependent on position of neighbor relative to current (diagonal or straight) 
+    crow, ccol = current.get_pos()
     for neighbor in current.neighbors:
-      temp_g_score = g_score[current] + 1
+      nrow, ncol = neighbor.get_pos()
+      dist_from_curr = math.sqrt(abs(crow - nrow) + abs(ccol - ncol))
+      if dist_from_curr > 1:
+        temp_g_score = g_score[current] + 1.4
+      else: 
+        temp_g_score = g_score[current] + 1
 
       if temp_g_score < g_score[neighbor]: 
         came_from[neighbor] = current
@@ -200,7 +227,6 @@ def main(win, width):
 
   while run:
     draw(win, grid, ROWS, width)
-
     for event in pygame.event.get():
       if event.type == pygame.QUIT:
         run = False
@@ -216,6 +242,7 @@ def main(win, width):
         if not start and spot != end:
           start = spot
           start.make_start()
+
         # Initialize ending point if it hasn't been set
         elif not end and spot != start:
           end = spot
