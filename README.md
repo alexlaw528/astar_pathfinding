@@ -1,5 +1,5 @@
 # astar_pathfinding
-A* pathfinding algorithm visualizer with diagonality consideration
+A* pathfinding algorithm visualizer updated to consider diagonal neighbors and barriers
 
 ## Requires pygame to run locally
 https://www.pygame.org/wiki/GettingStarted
@@ -12,13 +12,13 @@ Second click sets end point
 
 Third click sets barriers
 
-<img src='./assets/readme1.png'>
-
 Right click to erase
 
 "Space" to start
 
 "c" to clear
+
+<img src='./assets/readme1.png'>
 
 <img src='./assets/readme2.png'>
 
