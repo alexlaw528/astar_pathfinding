@@ -1,3 +1,4 @@
+import asyncio
 import pygame 
 import math 
 from queue import PriorityQueue
@@ -88,16 +89,16 @@ class Spot:
       self.neighbors.append(grid[self.row][self.col - 1])
 
     # Diagonals
-    if self.col > 0 and self.row > 0 and not grid[self.row - 1][self.col - 1].is_barrier(): #N-W
+    if self.col > 0 and self.row > 0 and not grid[self.row - 1][self.col - 1].is_barrier() and not (grid[self.row - 1][self.col].is_barrier() and grid[self.row][self.col-1].is_barrier()): #N-W
       self.neighbors.append(grid[self.row - 1][self.col - 1])
 
-    if self.col < self.total_rows - 1 and self.row > 0 and not grid[self.row - 1][self.col + 1].is_barrier(): #N-E
+    if self.col < self.total_rows - 1 and self.row > 0 and not grid[self.row - 1][self.col + 1].is_barrier() and not (grid[self.row - 1][self.col].is_barrier() and grid[self.row][self.col + 1].is_barrier()): #N-E
       self.neighbors.append(grid[self.row - 1][self.col + 1])
     
-    if self.col > 0 and self.row < self.total_rows - 1 and not grid[self.row + 1][self.col - 1].is_barrier(): #S-W
+    if self.col > 0 and self.row < self.total_rows - 1 and not grid[self.row + 1][self.col - 1].is_barrier() and not (grid[self.row + 1][self.col].is_barrier() and grid[self.row][self.col - 1].is_barrier()): #S-W
       self.neighbors.append(grid[self.row + 1][self.col - 1])
 
-    if self.col < self.total_rows - 1 and self.row < self.total_rows - 1 and not grid[self.row + 1][self.col + 1].is_barrier(): #S-E
+    if self.col < self.total_rows - 1 and self.row < self.total_rows - 1 and not grid[self.row + 1][self.col + 1].is_barrier() and not (grid[self.row + 1][self.col].is_barrier() and grid[self.row][self.col + 1].is_barrier()): #S-E
       self.neighbors.append(grid[self.row + 1][self.col + 1])
          
   # less than -> how we handle when we compare two spots together
@@ -106,7 +107,7 @@ class Spot:
 
 # h(n) function
 def h(p1, p2):
-  x1, y1 = p1
+  x1, y1 = p1 
   x2, y2 = p2
   return abs(x1 - x2) + abs(y1 - y2)
 
@@ -119,7 +120,6 @@ def reconstruct_path(came_from, current, draw, start):
 
     current.make_path()
     draw()
-  
 
 def algorithm(draw, grid, start, end):
   count = 0
@@ -170,11 +170,11 @@ def algorithm(draw, grid, start, end):
           open_set_hash.add(neighbor)
           neighbor.make_open()
 
-    draw()
-
     if current != start:
       current.make_close()
 
+    draw()
+    
   return False
 
 def make_grid(rows, width):
@@ -216,18 +216,18 @@ def get_clicked_pos(pos, rows, width):
   col = x // gap
   return row, col
 
-def main(win, width):
-  ROWS = 50
+async def main(win, width):
+  ROWS = 10
   grid = make_grid(ROWS, WIDTH)
-
   start = None
   end = None
-
   run = True
 
   while run:
     draw(win, grid, ROWS, width)
+
     for event in pygame.event.get():
+      
       if event.type == pygame.QUIT:
         run = False
 
@@ -262,6 +262,7 @@ def main(win, width):
         if spot == end:
           end = None
       
+      
       # Run algo
       if event.type == pygame.KEYDOWN:
         if event.key == pygame.K_SPACE and start and end:
@@ -269,6 +270,7 @@ def main(win, width):
             for spot in row:
               spot.update_neighbors(grid)
           algorithm(lambda: draw(win, grid, ROWS, width), grid, start, end)
+          pygame.display.update()
 
         # press c to clear
         if event.key == pygame.K_c:
@@ -276,7 +278,10 @@ def main(win, width):
           end = None
           grid = make_grid(ROWS, width)
 
+    await asyncio.sleep(0)
+
   pygame.quit()
 
-main(WIN, WIDTH)
+# main(WIN, WIDTH)
+asyncio.run( main(WIN, WIDTH) )
 
